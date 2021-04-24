@@ -22,7 +22,8 @@ HTML=$(GUIDE_ID).html $(GUIDE_ID)-wide.html
 GUIDE_MD=$(sort $(wildcard $(GUIDE_ID)_part_*.md))
 
 PREPROC=../bin/preproc
-PREPROC_MD=$(GUIDE_ID)_temp_preproc.md
+WORKDIR=./work
+PREPROC_MD=$(WORKDIR)/preproc.md
 
 COMMON_OPTS= \
 	--variable title:$(TITLE) \
@@ -41,7 +42,6 @@ PDF_OPTS= \
 	--variable monofont=$(PDF_MONOFONT) \
 	--variable geometry:"top=1in,bottom=1in" \
 	-V documentclass=book \
-	-o $(GUIDE_ID)_temp.tex \
 	$(COMMON_OPTS)
 	#-V indent \
 
@@ -62,134 +62,66 @@ BW=--no-highlight  # black and white options
 
 all: $(HTML) $(BOOKS)
 
-bg-css.html: common-css-src.html
+$(WORKDIR):
+	mkdir -p $@
+
+$(PREPROC_MD): $(GUIDE_MD) | $(WORKDIR)
+	$(PREPROC) $^ $(PREPROC_MD)
+
+$(WORKDIR)/bg-css.html: common-css-src.html | $(WORKDIR)
 	cat $^ > $@
 
-bg-css-wide.html: common-css-src.html widescreen-css-src.html
+$(WORKDIR)/bg-css-wide.html: common-css-src.html widescreen-css-src.html | $(WORKDIR)
 	cat $^ > $@
 
-$(GUIDE_ID).html: $(GUIDE_MD) bg-css.html
-	$(PREPROC) $(GUIDE_MD) $(PREPROC_MD)
-	pandoc $(HTML_OPTS) -s $(PREPROC_MD) -o $@ -H bg-css.html
-	sed 's/src="\(.*\)\.pdf"/src="\1.svg"/g' $@ > $(GUIDE_ID)_temp.html # use svg images
-	mv $(GUIDE_ID)_temp.html $@
-	rm -f $(GUIDE_ID)_temp*
+$(GUIDE_ID).html: $(PREPROC_MD) $(WORKDIR)/bg-css.html
+	pandoc $(HTML_OPTS) -s $(PREPROC_MD) -o $@ -H $(WORKDIR)/bg-css.html
+	sed 's/src="\(.*\)\.pdf"/src="\1.svg"/g' $@ > $@.tmp # use svg images
+	mv $@.tmp $@
 
-$(GUIDE_ID)-wide.html: $(GUIDE_MD) bg-css-wide.html
-	$(PREPROC) $(GUIDE_MD) $(PREPROC_MD)
-	pandoc $(HTML_OPTS) -s $(PREPROC_MD) -o $@ -H bg-css-wide.html
-	sed 's/src="\(.*\)\.pdf"/src="\1.svg"/g' $@ > $(GUIDE_ID)_temp.html # use svg images
-	mv $(GUIDE_ID)_temp.html $@
-	rm -f $(GUIDE_ID)_temp*
+$(GUIDE_ID)-wide.html: $(PREPROC_MD) $(WORKDIR)/bg-css-wide.html
+	pandoc $(HTML_OPTS) -s $(PREPROC_MD) -o $@ -H $(WORKDIR)/bg-css-wide.html
+	sed 's/src="\(.*\)\.pdf"/src="\1.svg"/g' $@ > $@.tmp # use svg images
+	mv $@.tmp $@
 
-$(GUIDE_ID)_usl_c_1.pdf: $(GUIDE_MD)
-	$(PREPROC) $^ $(PREPROC_MD)
-	pandoc $(PDF_OPTS) $(USLETTER) $(ONESIDE) $(PREPROC_MD)
-	xelatex $(GUIDE_ID)_temp.tex
-	makeindex $(GUIDE_ID)_temp.idx
-	xelatex $(GUIDE_ID)_temp.tex
-	xelatex $(GUIDE_ID)_temp.tex
-	mv $(GUIDE_ID)_temp.pdf $@
-	rm -f $(GUIDE_ID)_temp*
+$(WORKDIR)/$(GUIDE_ID)_usl_c_1.tex: $(PREPROC_MD)
+	pandoc $(PDF_OPTS) $(USLETTER) $(ONESIDE) -o $@ $<
 
-$(GUIDE_ID)_usl_c_2.pdf: $(GUIDE_MD)
-	$(PREPROC) $^ $(PREPROC_MD)
-	pandoc $(PDF_OPTS) $(USLETTER) $(TWOSIDE) $(PREPROC_MD)
-	xelatex $(GUIDE_ID)_temp.tex
-	makeindex $(GUIDE_ID)_temp.idx
-	xelatex $(GUIDE_ID)_temp.tex
-	xelatex $(GUIDE_ID)_temp.tex
-	mv $(GUIDE_ID)_temp.pdf $@
-	rm -f $(GUIDE_ID)_temp*
+$(WORKDIR)/$(GUIDE_ID)_usl_c_2.tex: $(PREPROC_MD)
+	pandoc $(PDF_OPTS) $(USLETTER) $(TWOSIDE) -o $@ $<
 
-$(GUIDE_ID)_a4_c_1.pdf: $(GUIDE_MD)
-	$(PREPROC) $^ $(PREPROC_MD)
-	pandoc $(PDF_OPTS) $(A4) $(ONESIDE) $(PREPROC_MD)
-	xelatex $(GUIDE_ID)_temp.tex
-	makeindex $(GUIDE_ID)_temp.idx
-	xelatex $(GUIDE_ID)_temp.tex
-	xelatex $(GUIDE_ID)_temp.tex
-	mv $(GUIDE_ID)_temp.pdf $@
-	rm -f $(GUIDE_ID)_temp*
+$(WORKDIR)/$(GUIDE_ID)_a4_c_1.tex: $(PREPROC_MD)
+	pandoc $(PDF_OPTS) $(A4) $(ONESIDE) -o $@ $<
 
-$(GUIDE_ID)_a4_c_2.pdf: $(GUIDE_MD)
-	$(PREPROC) $^ $(PREPROC_MD)
-	pandoc $(PDF_OPTS) $(A4) $(TWOSIDE) $(PREPROC_MD)
-	xelatex $(GUIDE_ID)_temp.tex
-	makeindex $(GUIDE_ID)_temp.idx
-	xelatex $(GUIDE_ID)_temp.tex
-	xelatex $(GUIDE_ID)_temp.tex
-	mv $(GUIDE_ID)_temp.pdf $@
-	rm -f $(GUIDE_ID)_temp*
+$(WORKDIR)/$(GUIDE_ID)_a4_c_2.tex: $(PREPROC_MD)
+	pandoc $(PDF_OPTS) $(A4) $(TWOSIDE) -o $@ $<
 
-$(GUIDE_ID)_usl_bw_1.pdf: $(GUIDE_MD)
-	$(PREPROC) $^ $(PREPROC_MD)
-	pandoc $(PDF_OPTS) $(USLETTER) $(ONESIDE) $(BW) $(PREPROC_MD)
-	xelatex $(GUIDE_ID)_temp.tex
-	makeindex $(GUIDE_ID)_temp.idx
-	xelatex $(GUIDE_ID)_temp.tex
-	xelatex $(GUIDE_ID)_temp.tex
-	mv $(GUIDE_ID)_temp.pdf $@
-	rm -f $(GUIDE_ID)_temp*
+$(WORKDIR)/$(GUIDE_ID)_usl_bw_1.tex: $(PREPROC_MD)
+	pandoc $(PDF_OPTS) $(USLETTER) $(ONESIDE) $(BW) -o $@ $<
 
-$(GUIDE_ID)_usl_bw_2.pdf: $(GUIDE_MD)
-	$(PREPROC) $^ $(PREPROC_MD)
-	pandoc $(PDF_OPTS) $(USLETTER) $(TWOSIDE) $(BW) $(PREPROC_MD)
-	xelatex $(GUIDE_ID)_temp.tex
-	makeindex $(GUIDE_ID)_temp.idx
-	xelatex $(GUIDE_ID)_temp.tex
-	xelatex $(GUIDE_ID)_temp.tex
-	mv $(GUIDE_ID)_temp.pdf $@
-	rm -f $(GUIDE_ID)_temp*
+$(WORKDIR)/$(GUIDE_ID)_usl_bw_2.tex: $(PREPROC_MD)
+	pandoc $(PDF_OPTS) $(USLETTER) $(TWOSIDE) $(BW) -o $@ $<
 
-$(GUIDE_ID)_a4_bw_1.pdf: $(GUIDE_MD)
-	$(PREPROC) $^ $(PREPROC_MD)
-	pandoc $(PDF_OPTS) $(A4) $(ONESIDE) $(BW) $(PREPROC_MD)
-	xelatex $(GUIDE_ID)_temp.tex
-	makeindex $(GUIDE_ID)_temp.idx
-	xelatex $(GUIDE_ID)_temp.tex
-	xelatex $(GUIDE_ID)_temp.tex
-	mv $(GUIDE_ID)_temp.pdf $@
-	rm -f $(GUIDE_ID)_temp*
+$(WORKDIR)/$(GUIDE_ID)_a4_bw_1.tex: $(PREPROC_MD)
+	pandoc $(PDF_OPTS) $(A4) $(ONESIDE) $(BW) -o $@ $<
 
-$(GUIDE_ID)_a4_bw_2.pdf: $(GUIDE_MD)
-	$(PREPROC) $^ $(PREPROC_MD)
-	pandoc $(PDF_OPTS) $(A4) $(TWOSIDE) $(BW) $(PREPROC_MD)
-	xelatex $(GUIDE_ID)_temp.tex
-	makeindex $(GUIDE_ID)_temp.idx
-	xelatex $(GUIDE_ID)_temp.tex
-	xelatex $(GUIDE_ID)_temp.tex
-	mv $(GUIDE_ID)_temp.pdf $@
-	rm -f $(GUIDE_ID)_temp*
+$(WORKDIR)/$(GUIDE_ID)_a4_bw_2.tex: $(PREPROC_MD)
+	pandoc $(PDF_OPTS) $(A4) $(TWOSIDE) $(BW) -o $@ $<
 
-$(GUIDE_ID)_lulu.md: $(GUIDE_MD)
-	$(PREPROC) $^ $@
+$(WORKDIR)/$(GUIDE_ID)_lulu.tex: $(PREPROC_MD)
+	pandoc $(PDF_OPTS) $(TWOSIDE) $(CROWNQUARTO) $(BLANKLAST) -o $@ $<
 
-$(GUIDE_ID)_lulu.pdf: $(GUIDE_ID)_lulu.md
-	pandoc $(PDF_OPTS) $(TWOSIDE) $(CROWNQUARTO) $(BLANKLAST) $(PREPROC_MD)
-	xelatex $(GUIDE_ID)_temp.tex
-	makeindex $(GUIDE_ID)_temp.idx
-	xelatex $(GUIDE_ID)_temp.tex
-	xelatex $(GUIDE_ID)_temp.tex
-	mv $(GUIDE_ID)_temp.pdf $@
-	rm -f $(GUIDE_ID)_temp*
+$(WORKDIR)/$(GUIDE_ID)_amazon.tex: $(PREPROC_MD)
+	pandoc $(PDF_OPTS) $(TWOSIDE) $(SIZE_75x925_AMAZON) $(BLANKLAST) -o $@ $<
 
-$(GUIDE_ID)_amazon.md: $(GUIDE_MD)
-	$(PREPROC) $^ $@
-
-$(GUIDE_ID)_amazon.pdf: $(GUIDE_ID)_amazon.md
-	pandoc $(PDF_OPTS) $(TWOSIDE) $(SIZE_75x925_AMAZON) $(BLANKLAST) $(GUIDE_ID)_amazon.md
-	xelatex $(GUIDE_ID)_temp.tex
-	makeindex $(GUIDE_ID)_temp.idx
-	xelatex $(GUIDE_ID)_temp.tex
-	xelatex $(GUIDE_ID)_temp.tex
-	mv $(GUIDE_ID)_temp.pdf $@
-	rm -f $(GUIDE_ID)_temp*
+%.pdf: $(WORKDIR)/%.tex
+	cd $(WORKDIR); xelatex $*.tex; makeindex $*.idx; xelatex $*.tex; xelatex $*.tex
+	mv $(WORKDIR)/$*.pdf $@
 
 clean:
-	rm -f $(GUIDE_ID)_temp* bg-css*.html
+	rm -rf $(WORKDIR)
 
 pristine: clean
 	rm -f $(HTML) $(BOOKS)
 
-.PHONY: all, html, clean, pristine
+.PHONY: all, clean, pristine
