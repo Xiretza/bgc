@@ -76,13 +76,11 @@ $(WORKDIR)/bg-css-wide.html: common-css-src.html widescreen-css-src.html | $(WOR
 
 $(GUIDE_ID).html: $(PREPROC_MD) $(WORKDIR)/bg-css.html
 	pandoc $(HTML_OPTS) -s $(PREPROC_MD) -o $@ -H $(WORKDIR)/bg-css.html
-	sed 's/src="\(.*\)\.pdf"/src="\1.svg"/g' $@ > $@.tmp # use svg images
-	mv $@.tmp $@
+	sed -i 's/src="\(.*\)\.pdf"/src="\1.svg"/g' $@ # use svg images
 
 $(GUIDE_ID)-wide.html: $(PREPROC_MD) $(WORKDIR)/bg-css-wide.html
 	pandoc $(HTML_OPTS) -s $(PREPROC_MD) -o $@ -H $(WORKDIR)/bg-css-wide.html
-	sed 's/src="\(.*\)\.pdf"/src="\1.svg"/g' $@ > $@.tmp # use svg images
-	mv $@.tmp $@
+	sed -i 's/src="\(.*\)\.pdf"/src="\1.svg"/g' $@ # use svg images
 
 $(WORKDIR)/$(GUIDE_ID)_usl_c_1.tex: $(PREPROC_MD)
 	pandoc $(PDF_OPTS) $(USLETTER) $(ONESIDE) -o $@ $<
